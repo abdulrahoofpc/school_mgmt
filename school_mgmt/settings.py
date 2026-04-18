@@ -129,15 +129,32 @@
 import os
 from pathlib import Path
 from datetime import timedelta
-import dj_database_url
-from decouple import config, Csv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# ── Try to import decouple, fall back to os.environ ───────────────────────────
+try:
+    from decouple import config, Csv
+    def get(key, default=None, cast=None):
+        return config(key, default=default, cast=cast)
+except ImportError:
+    def get(key, default=None, cast=None):
+        val = os.environ.get(key, default)
+        if cast and val is not None:
+            if cast == bool:
+                return val.lower() in ('true', '1', 'yes')
+            return cast(val)
+        return val
+
 # ── Security ───────────────────────────────────────────────────────────────────
-SECRET_KEY = config('SECRET_KEY', default='django-insecure-local-dev-only')
-DEBUG      = config('DEBUG', default=False, cast=bool)
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=Csv())
+SECRET_KEY = os.environ.get(
+    'SECRET_KEY',
+    'django-insecure-change-this-in-production-use-env-variable'
+)
+DEBUG = os.environ.get('DEBUG', 'False').lower() in ('true', '1', 'yes')
+
+_allowed = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1,.onrender.com')
+ALLOWED_HOSTS = [h.strip() for h in _allowed.split(',') if h.strip()]
 
 # ── Apps ───────────────────────────────────────────────────────────────────────
 INSTALLED_APPS = [
@@ -165,7 +182,7 @@ INSTALLED_APPS = [
 # ── Middleware ─────────────────────────────────────────────────────────────────
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware',    # serves static files on Render
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -196,12 +213,12 @@ TEMPLATES = [
 WSGI_APPLICATION = 'school_mgmt.wsgi.application'
 
 # ── Database ───────────────────────────────────────────────────────────────────
-# On Render  → DATABASE_URL is set in Environment tab → uses Neon Postgres
-# Locally    → DATABASE_URL not set → falls back to local Postgres via DB_* vars
-
-DATABASE_URL = config('DATABASE_URL', default=None)
+# On Render  → DATABASE_URL env var is set → connects to Neon Postgres
+# Locally    → DATABASE_URL not set → uses local DB_* vars
+DATABASE_URL = os.environ.get('DATABASE_URL', None)
 
 if DATABASE_URL:
+    import dj_database_url
     DATABASES = {
         'default': dj_database_url.parse(
             DATABASE_URL,
@@ -213,11 +230,11 @@ else:
     DATABASES = {
         'default': {
             'ENGINE':   'django.db.backends.postgresql',
-            'NAME':     config('DB_NAME',     default='school_mgmt'),
-            'USER':     config('DB_USER',     default='postgres'),
-            'PASSWORD': config('DB_PASSWORD', default='admin@123'),
-            'HOST':     config('DB_HOST',     default='localhost'),
-            'PORT':     config('DB_PORT',     default='5434'),
+            'NAME':     os.environ.get('DB_NAME', 'school_mgmt'),
+            'USER':     os.environ.get('DB_USER', 'postgres'),
+            'PASSWORD': os.environ.get('DB_PASSWORD', 'admin@123'),
+            'HOST':     os.environ.get('DB_HOST', 'localhost'),
+            'PORT':     os.environ.get('DB_PORT', '5434'),
         }
     }
 
@@ -281,7 +298,9 @@ SIMPLE_JWT = {
 }
 
 # ── CORS ───────────────────────────────────────────────────────────────────────
-CORS_ALLOW_ALL_ORIGINS = config('CORS_ALLOW_ALL_ORIGINS', default=False, cast=bool)
+CORS_ALLOW_ALL_ORIGINS = os.environ.get(
+    'CORS_ALLOW_ALL_ORIGINS', 'False'
+).lower() in ('true', '1', 'yes')
 
 # ── HTTPS security (production only) ──────────────────────────────────────────
 if not DEBUG:
