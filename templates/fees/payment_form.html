@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% block title %}Record Payment{% endblock %}
+{% block page_title %}Record Payment{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Record Payment</h1>
+    <div class="text-muted" style="font-size:12px; margin-top:4px;">
+      For: {{ fee.student.full_name }} — AY {{ fee.academic_year }}
+    </div>
+  </div>
+  <a href="{% url 'fees:detail' fee.pk %}" class="btn btn-ghost"><i class="fas fa-arrow-left"></i> Back</a>
+</div>
+
+<div style="display:grid; grid-template-columns:2fr 1fr; gap:16px;">
+  <div class="card">
+    <form method="post">
+      {% csrf_token %}
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Amount Paid (₹) *</label>
+          <input type="number" name="amount_paid" class="form-control" step="0.01" min="0.01"
+            max="{{ fee.balance }}" value="{{ fee.balance|floatformat:0 }}" required />
+        </div>
+        <div class="form-group">
+          <label>Payment Date *</label>
+          <input type="date" name="payment_date" class="form-control" value="{{ today }}" required />
+        </div>
+        <div class="form-group">
+          <label>Payment Mode</label>
+          <select name="payment_mode" class="form-control">
+            {% for val, label in payment_modes %}
+            <option value="{{ val }}">{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Status</label>
+          <select name="status" class="form-control">
+            <option value="paid">Paid</option>
+            <option value="partial">Partial</option>
+          </select>
+        </div>
+        <div class="form-group" style="grid-column:1/-1;">
+          <label>Remarks</label>
+          <textarea name="remarks" class="form-control" placeholder="Optional notes…"></textarea>
+        </div>
+      </div>
+      <div style="display:flex; gap:10px; margin-top:16px;">
+        <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save & Print Receipt</button>
+        <a href="{% url 'fees:detail' fee.pk %}" class="btn btn-ghost">Cancel</a>
+      </div>
+    </form>
+  </div>
+
+  <div class="card" style="align-self:start;">
+    <div class="card-header"><span class="card-title">Fee Summary</span></div>
+    <table style="font-size:13px;">
+      <tr><td class="text-muted" style="padding:6px 0;">Total Fee</td><td class="text-mono">₹{{ fee.total_fee|floatformat:0 }}</td></tr>
+      <tr><td class="text-muted" style="padding:6px 0;">Paid So Far</td><td class="text-mono text-green">₹{{ fee.total_paid|floatformat:0 }}</td></tr>
+      <tr style="border-top:1px solid var(--border);">
+        <td style="padding:8px 0; font-weight:600;">Balance</td>
+        <td class="text-mono text-red" style="font-weight:700;">₹{{ fee.balance|floatformat:0 }}</td>
+      </tr>
+    </table>
+    <div style="margin-top:12px;">
+      <span class="badge {% if fee.payment_status == 'paid' %}badge-green{% elif fee.payment_status == 'partial' %}badge-yellow{% else %}badge-red{% endif %}">
+        {{ fee.payment_status|capfirst }}
+      </span>
+    </div>
+  </div>
+</div>
+{% endblock %}

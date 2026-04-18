@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+{% block title %}Fee Structures{% endblock %}
+{% block page_title %}Fee Structures{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Fee Structures</h1>
+    <div class="text-muted" style="font-size:12px; margin-top:4px;">{{ total }} record{{ total|pluralize }}</div>
+  </div>
+  <a href="{% url 'fees:create' %}" class="btn btn-primary"><i class="fas fa-plus"></i> Create Fee Structure</a>
+</div>
+
+<div class="card">
+  <form method="get" class="search-bar">
+    <div class="search-input-wrap">
+      <i class="fas fa-search"></i>
+      <input type="text" name="q" value="{{ q }}" class="form-control search-input" placeholder="Search by student name…" />
+    </div>
+    <input type="text" name="year" value="{{ year }}" class="form-control" style="width:110px;" placeholder="Year e.g. 2024-25" />
+    <button type="submit" class="btn btn-ghost"><i class="fas fa-filter"></i> Filter</button>
+    {% if q or year %}<a href="{% url 'fees:list' %}" class="btn btn-ghost"><i class="fas fa-times"></i> Clear</a>{% endif %}
+  </form>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Student</th><th>Class</th><th>Year</th><th>Total Fee</th><th>Paid</th><th>Balance</th><th>Status</th><th>Actions</th></tr>
+      </thead>
+      <tbody>
+        {% for fs in page_obj %}
+        <tr>
+          <td><a href="{% url 'students:detail' fs.student.pk %}" style="color:var(--text); text-decoration:none; font-weight:500;">{{ fs.student.full_name }}</a></td>
+          <td><span class="badge badge-blue">{{ fs.student.get_student_class_display }} – {{ fs.student.section }}</span></td>
+          <td class="text-mono" style="font-size:12px;">{{ fs.academic_year }}</td>
+          <td class="text-mono">₹{{ fs.total_fee|floatformat:0 }}</td>
+          <td class="text-mono text-green">₹{{ fs.total_paid|floatformat:0 }}</td>
+          <td class="text-mono {% if fs.balance > 0 %}text-red{% else %}text-green{% endif %}">₹{{ fs.balance|floatformat:0 }}</td>
+          <td>
+            <span class="badge {% if fs.payment_status == 'paid' %}badge-green{% elif fs.payment_status == 'partial' %}badge-yellow{% else %}badge-red{% endif %}">
+              {{ fs.payment_status|capfirst }}
+            </span>
+          </td>
+          <td>
+            <div style="display:flex; gap:5px;">
+              <a href="{% url 'fees:detail' fs.pk %}" class="btn btn-ghost btn-sm"><i class="fas fa-eye"></i></a>
+              <a href="{% url 'fees:payment_create' fs.pk %}" class="btn btn-primary btn-sm"><i class="fas fa-rupee-sign"></i></a>
+              <a href="{% url 'fees:edit' fs.pk %}" class="btn btn-ghost btn-sm"><i class="fas fa-pen"></i></a>
+              <a href="{% url 'fees:delete' fs.pk %}" class="btn btn-ghost btn-sm" style="color:var(--danger);"><i class="fas fa-trash"></i></a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" style="text-align:center; padding:40px; color:var(--muted);">
+          <i class="fas fa-file-invoice-dollar" style="font-size:28px; display:block; margin-bottom:10px; opacity:.3;"></i>
+          No fee structures found.
+        </td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if page_obj.has_other_pages %}
+  <div class="pagination">
+    {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}&q={{ q }}&year={{ year }}" class="page-btn"><i class="fas fa-chevron-left"></i></a>{% endif %}
+    {% for num in page_obj.paginator.page_range %}
+    <a href="?page={{ num }}&q={{ q }}&year={{ year }}" class="page-btn {% if page_obj.number == num %}active{% endif %}">{{ num }}</a>
+    {% endfor %}
+    {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}&q={{ q }}&year={{ year }}" class="page-btn"><i class="fas fa-chevron-right"></i></a>{% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

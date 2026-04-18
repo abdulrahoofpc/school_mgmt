@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+{% block title %}Salary Records{% endblock %}
+{% block page_title %}Salary Management{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Salary Records</h1>
+  <a href="{% url 'teachers:salary_create' %}" class="btn btn-primary"><i class="fas fa-plus"></i> Add Record</a>
+</div>
+
+<div class="card">
+  <form method="get" class="search-bar">
+    <select name="teacher" class="form-control" style="width:auto; min-width:180px;">
+      <option value="">All Teachers</option>
+      {% for t in teachers %}
+      <option value="{{ t.pk }}" {% if teacher_id == t.pk|stringformat:"s" %}selected{% endif %}>{{ t.full_name }}</option>
+      {% endfor %}
+    </select>
+    <select name="month" class="form-control" style="width:auto; min-width:130px;">
+      <option value="">All Months</option>
+      {% for val, label in months %}
+      <option value="{{ val }}" {% if month == val|stringformat:"s" %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <select name="year" class="form-control" style="width:auto; min-width:100px;">
+      {% for y in years %}
+      <option value="{{ y }}" {% if year == y|stringformat:"s" %}selected{% endif %}>{{ y }}</option>
+      {% endfor %}
+    </select>
+    <select name="status" class="form-control" style="width:auto; min-width:110px;">
+      <option value="">All Status</option>
+      <option value="paid" {% if status == 'paid' %}selected{% endif %}>Paid</option>
+      <option value="unpaid" {% if status == 'unpaid' %}selected{% endif %}>Unpaid</option>
+    </select>
+    <button type="submit" class="btn btn-ghost"><i class="fas fa-filter"></i> Filter</button>
+    <a href="{% url 'teachers:salary_list' %}" class="btn btn-ghost"><i class="fas fa-times"></i> Clear</a>
+  </form>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Teacher</th><th>Month</th><th>Year</th><th>Amount</th><th>Status</th><th>Payment Date</th><th>Remarks</th><th>Actions</th></tr>
+      </thead>
+      <tbody>
+        {% for s in page_obj %}
+        <tr>
+          <td><a href="{% url 'teachers:detail' s.teacher.pk %}" style="color:var(--text); text-decoration:none; font-weight:500;">{{ s.teacher.full_name }}</a></td>
+          <td>{{ s.get_month_display }}</td>
+          <td class="text-mono">{{ s.year }}</td>
+          <td class="text-mono text-green">₹{{ s.amount|floatformat:0 }}</td>
+          <td><span class="badge {% if s.status == 'paid' %}badge-green{% else %}badge-yellow{% endif %}">{{ s.get_status_display }}</span></td>
+          <td class="text-muted">{{ s.payment_date|default:"—" }}</td>
+          <td class="text-muted" style="font-size:12px;">{{ s.remarks|truncatechars:30|default:"—" }}</td>
+          <td>
+            <div style="display:flex; gap:6px;">
+              <a href="{% url 'teachers:salary_edit' s.pk %}" class="btn btn-ghost btn-sm"><i class="fas fa-pen"></i></a>
+              <a href="{% url 'teachers:salary_delete' s.pk %}" class="btn btn-ghost btn-sm" style="color:var(--danger);"><i class="fas fa-trash"></i></a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" style="text-align:center; padding:40px; color:var(--muted);">No salary records found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if page_obj.has_other_pages %}
+  <div class="pagination">
+    {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}" class="page-btn"><i class="fas fa-chevron-left"></i></a>{% endif %}
+    {% for num in page_obj.paginator.page_range %}
+    <a href="?page={{ num }}" class="page-btn {% if page_obj.number == num %}active{% endif %}">{{ num }}</a>
+    {% endfor %}
+    {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}" class="page-btn"><i class="fas fa-chevron-right"></i></a>{% endif %}
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,116 @@
+{% extends 'base.html' %}
+{% block title %}Financial Summary{% endblock %}
+{% block page_title %}Financial Summary{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Financial Summary</h1>
+  <button onclick="window.print()" class="btn btn-ghost"><i class="fas fa-print"></i> Print</button>
+</div>
+
+<div class="card" style="margin-bottom:16px;">
+  <form method="get" class="search-bar">
+    <select name="year" class="form-control" style="width:auto; min-width:100px;">
+      {% for y in years %}
+      <option value="{{ y }}" {% if year == y|stringformat:"s" %}selected{% endif %}>{{ y }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="btn btn-ghost"><i class="fas fa-filter"></i> View Year</button>
+  </form>
+</div>
+
+<div class="stats-grid" style="margin-bottom:16px;">
+  <div class="stat-card">
+    <div class="stat-icon green"><i class="fas fa-arrow-down"></i></div>
+    <div>
+      <div class="stat-value text-green">₹{{ total_income|floatformat:0 }}</div>
+      <div class="stat-label">Total Income {{ year }}</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon red"><i class="fas fa-arrow-up"></i></div>
+    <div>
+      <div class="stat-value text-red">₹{{ total_expenses|floatformat:0 }}</div>
+      <div class="stat-label">Total Expenses {{ year }}</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon {% if net_profit >= 0 %}green{% else %}red{% endif %}">
+      <i class="fas fa-balance-scale"></i>
+    </div>
+    <div>
+      <div class="stat-value {% if net_profit >= 0 %}text-green{% else %}text-red{% endif %}">
+        ₹{{ net_profit|floatformat:0 }}
+      </div>
+      <div class="stat-label">{% if net_profit >= 0 %}Net Profit{% else %}Net Loss{% endif %}</div>
+    </div>
+  </div>
+</div>
+
+<div style="display:grid; grid-template-columns:3fr 2fr; gap:16px;">
+  <div class="card">
+    <div class="card-header"><span class="card-title">Monthly Breakdown — {{ year }}</span></div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Month</th><th>Income</th><th>Expenses</th><th>Profit / Loss</th></tr>
+        </thead>
+        <tbody>
+          {% for row in monthly_data %}
+          <tr>
+            <td style="font-weight:500;">{{ row.month }}</td>
+            <td class="text-mono text-green">₹{{ row.income|floatformat:0 }}</td>
+            <td class="text-mono text-red">₹{{ row.expenses|floatformat:0 }}</td>
+            <td class="text-mono {% if row.profit >= 0 %}text-green{% else %}text-red{% endif %}">
+              {% if row.profit >= 0 %}+{% endif %}₹{{ row.profit|floatformat:0 }}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr style="background:var(--bg3); font-weight:700;">
+            <td style="padding:10px 14px;">ANNUAL TOTAL</td>
+            <td class="text-mono text-green" style="padding:10px 14px;">₹{{ total_income|floatformat:0 }}</td>
+            <td class="text-mono text-red" style="padding:10px 14px;">₹{{ total_expenses|floatformat:0 }}</td>
+            <td class="text-mono {% if net_profit >= 0 %}text-green{% else %}text-red{% endif %}" style="padding:10px 14px;">
+              {% if net_profit >= 0 %}+{% endif %}₹{{ net_profit|floatformat:0 }}
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  </div>
+
+  <div class="card" style="align-self:start;">
+    <div class="card-header"><span class="card-title">Annual Chart</span></div>
+    <canvas id="annualChart" height="260"></canvas>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const months = [{% for r in monthly_data %}"{{ r.month }}"{% if not forloop.last %},{% endif %}{% endfor %}];
+const income  = [{% for r in monthly_data %}{{ r.income }}{% if not forloop.last %},{% endif %}{% endfor %}];
+const expense = [{% for r in monthly_data %}{{ r.expenses }}{% if not forloop.last %},{% endif %}{% endfor %}];
+
+new Chart(document.getElementById('annualChart').getContext('2d'), {
+  type: 'line',
+  data: {
+    labels: months,
+    datasets: [
+      { label: 'Income',   data: income,  borderColor: '#2ea043', backgroundColor: 'rgba(46,160,67,.1)', fill: true, tension: .4, pointRadius: 3 },
+      { label: 'Expenses', data: expense, borderColor: '#da3633', backgroundColor: 'rgba(218,54,51,.1)', fill: true, tension: .4, pointRadius: 3 },
+    ]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { labels: { color: '#8b949e', font: { size: 11 } } } },
+    scales: {
+      x: { ticks: { color: '#8b949e', font: { size: 9 } }, grid: { color: '#30363d' } },
+      y: { ticks: { color: '#8b949e', font: { size: 10 }, callback: v => '₹' + v.toLocaleString() }, grid: { color: '#30363d' } }
+    }
+  }
+});
+</script>
+{% endblock %}

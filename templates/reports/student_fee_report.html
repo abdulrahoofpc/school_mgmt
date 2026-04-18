@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+{% block title %}Student Fee Report{% endblock %}
+{% block page_title %}Student Fee Report{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Student Fee Report</h1>
+  <button onclick="window.print()" class="btn btn-ghost"><i class="fas fa-print"></i> Print</button>
+</div>
+
+<div class="card" style="margin-bottom:16px;">
+  <form method="get" class="search-bar">
+    <input type="text" name="year" value="{{ year }}" class="form-control" style="width:130px;" placeholder="Year e.g. 2024-25" />
+    <select name="class" class="form-control" style="width:auto; min-width:130px;">
+      <option value="">All Classes</option>
+      {% for val, label in class_choices %}
+      <option value="{{ val }}" {% if class_filter == val %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="btn btn-ghost"><i class="fas fa-filter"></i> Generate</button>
+    <a href="{% url 'reports:fee' %}" class="btn btn-ghost"><i class="fas fa-times"></i> Clear</a>
+  </form>
+</div>
+
+<!-- Summary stats -->
+<div class="stats-grid" style="margin-bottom:16px;">
+  <div class="stat-card">
+    <div class="stat-icon blue"><i class="fas fa-users"></i></div>
+    <div><div class="stat-value">{{ report_data|length }}</div><div class="stat-label">Students</div></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon blue"><i class="fas fa-file-invoice-dollar"></i></div>
+    <div><div class="stat-value">₹{{ total_fee|floatformat:0 }}</div><div class="stat-label">Total Fee</div></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon green"><i class="fas fa-check-circle"></i></div>
+    <div><div class="stat-value">₹{{ total_paid|floatformat:0 }}</div><div class="stat-label">Total Collected</div></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon red"><i class="fas fa-clock"></i></div>
+    <div><div class="stat-value">₹{{ total_balance|floatformat:0 }}</div><div class="stat-label">Outstanding</div></div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>#</th><th>Student</th><th>Class</th><th>Year</th><th>Total Fee</th><th>Paid</th><th>Balance</th><th>Status</th></tr>
+      </thead>
+      <tbody>
+        {% for r in report_data %}
+        <tr>
+          <td class="text-muted text-mono" style="font-size:11px;">{{ forloop.counter }}</td>
+          <td><a href="{% url 'students:detail' r.student.pk %}" style="color:var(--text); text-decoration:none; font-weight:500;">{{ r.student.full_name }}</a></td>
+          <td><span class="badge badge-blue">{{ r.student.get_student_class_display }}-{{ r.student.section }}</span></td>
+          <td class="text-mono" style="font-size:12px;">{{ r.academic_year }}</td>
+          <td class="text-mono">₹{{ r.total_fee|floatformat:0 }}</td>
+          <td class="text-mono text-green">₹{{ r.total_paid|floatformat:0 }}</td>
+          <td class="text-mono {% if r.balance > 0 %}text-red{% else %}text-green{% endif %}">₹{{ r.balance|floatformat:0 }}</td>
+          <td>
+            <span class="badge {% if r.status == 'paid' %}badge-green{% elif r.status == 'partial' %}badge-yellow{% else %}badge-red{% endif %}">
+              {{ r.status|capfirst }}
+            </span>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" class="text-muted" style="text-align:center; padding:30px;">No data found.</td></tr>
+        {% endfor %}
+      </tbody>
+      {% if report_data %}
+      <tfoot>
+        <tr style="background:var(--bg3); font-weight:700;">
+          <td colspan="4" style="padding:10px 14px;">TOTAL</td>
+          <td class="text-mono" style="padding:10px 14px;">₹{{ total_fee|floatformat:0 }}</td>
+          <td class="text-mono text-green" style="padding:10px 14px;">₹{{ total_paid|floatformat:0 }}</td>
+          <td class="text-mono text-red" style="padding:10px 14px;">₹{{ total_balance|floatformat:0 }}</td>
+          <td></td>
+        </tr>
+      </tfoot>
+      {% endif %}
+    </table>
+  </div>
+</div>
+{% endblock %}

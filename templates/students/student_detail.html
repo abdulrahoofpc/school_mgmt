@@ -1,0 +1,149 @@
+{% extends 'base.html' %}
+{% block title %}{{ student.full_name }}{% endblock %}
+{% block page_title %}Student Detail{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>{{ student.full_name }}</h1>
+    <div class="text-muted" style="font-size:12px; margin-top:4px;">
+      Roll No: {{ student.roll_number }} &nbsp;|&nbsp; {{ student.get_student_class_display }} – {{ student.section }}
+    </div>
+  </div>
+  <div style="display:flex; gap:8px;">
+    <a href="{% url 'students:edit' student.pk %}" class="btn btn-ghost"><i class="fas fa-pen"></i> Edit</a>
+    <a href="{% url 'students:list' %}" class="btn btn-ghost"><i class="fas fa-arrow-left"></i> Back</a>
+  </div>
+</div>
+
+<!-- Profile Header Card with Photo -->
+<div class="card" style="margin-bottom:16px; padding:20px;">
+  <div style="display:flex; align-items:center; gap:20px;">
+
+    <!-- Photo -->
+    {% if student.photo %}
+      <img src="{{ student.photo.url }}"
+           alt="{{ student.full_name }}"
+           style="width:90px; height:90px; border-radius:50%;
+                  object-fit:cover; flex-shrink:0;
+                  border:3px solid var(--border);" />
+    {% else %}
+      <div style="width:90px; height:90px; border-radius:50%; flex-shrink:0;
+                  background:var(--accent2, #6366f1); color:#fff;
+                  display:flex; align-items:center; justify-content:center;
+                  font-size:28px; font-weight:700;">
+        {{ student.first_name|first|upper }}{{ student.last_name|first|upper }}
+      </div>
+    {% endif %}
+
+    <!-- Basic Info -->
+    <div>
+      <div style="font-size:20px; font-weight:700; margin-bottom:4px;">{{ student.full_name }}</div>
+      <div class="text-muted" style="font-size:13px; margin-bottom:6px;">
+        {{ student.get_student_class_display }} &nbsp;–&nbsp; Section {{ student.section }}
+        &nbsp;|&nbsp; Roll No: <strong>{{ student.roll_number }}</strong>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+        <span class="badge {% if student.is_active %}badge-green{% else %}badge-gray{% endif %}">
+          {% if student.is_active %}Active{% else %}Inactive{% endif %}
+        </span>
+        <span class="badge badge-blue" style="text-transform:capitalize;">{{ student.get_gender_display }}</span>
+        {% if student.date_of_birth %}
+        <span class="text-muted" style="font-size:12px;">DOB: {{ student.date_of_birth }}</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
+  <div class="card">
+    <div class="card-header"><span class="card-title">Personal Details</span></div>
+    <table style="font-size:13px;">
+      <tr><td class="text-muted" style="padding:8px 0; width:140px;">Full Name</td><td>{{ student.full_name }}</td></tr>
+      <tr><td class="text-muted" style="padding:8px 0;">Gender</td><td>{{ student.get_gender_display }}</td></tr>
+      <tr><td class="text-muted" style="padding:8px 0;">Date of Birth</td><td>{{ student.date_of_birth|default:"—" }}</td></tr>
+      <tr><td class="text-muted" style="padding:8px 0;">Admission Date</td><td>{{ student.admission_date }}</td></tr>
+      <tr><td class="text-muted" style="padding:8px 0;">Status</td><td>
+        <span class="badge {% if student.is_active %}badge-green{% else %}badge-gray{% endif %}">
+          {% if student.is_active %}Active{% else %}Inactive{% endif %}
+        </span>
+      </td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-header"><span class="card-title">Parent / Guardian</span></div>
+    <table style="font-size:13px;">
+      <tr><td class="text-muted" style="padding:8px 0; width:140px;">Name</td><td>{{ student.parent_name }}</td></tr>
+      <tr><td class="text-muted" style="padding:8px 0;">Phone</td><td class="text-mono">{{ student.parent_phone }}</td></tr>
+      <tr><td class="text-muted" style="padding:8px 0;">Email</td><td>{{ student.parent_email|default:"—" }}</td></tr>
+      <tr><td class="text-muted" style="padding:8px 0;">Address</td><td>{{ student.address|default:"—" }}</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- Fee Summary -->
+<div class="card" style="margin-bottom:16px;">
+  <div class="card-header">
+    <span class="card-title">Fee Structures</span>
+    <a href="{% url 'fees:create' %}" class="btn btn-primary btn-sm"><i class="fas fa-plus"></i> Add Fee</a>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Academic Year</th><th>Total Fee</th><th>Paid</th><th>Balance</th><th>Status</th><th>Actions</th></tr>
+      </thead>
+      <tbody>
+        {% for fs in fee_structures %}
+        <tr>
+          <td>{{ fs.academic_year }}</td>
+          <td class="text-mono">₹{{ fs.total_fee|floatformat:0 }}</td>
+          <td class="text-mono text-green">₹{{ fs.total_paid|floatformat:0 }}</td>
+          <td class="text-mono {% if fs.balance > 0 %}text-red{% else %}text-green{% endif %}">₹{{ fs.balance|floatformat:0 }}</td>
+          <td>
+            <span class="badge {% if fs.payment_status == 'paid' %}badge-green{% elif fs.payment_status == 'partial' %}badge-yellow{% else %}badge-red{% endif %}">
+              {{ fs.payment_status|capfirst }}
+            </span>
+          </td>
+          <td>
+            <div style="display:flex; gap:6px;">
+              <a href="{% url 'fees:detail' fs.pk %}" class="btn btn-ghost btn-sm"><i class="fas fa-eye"></i></a>
+              <a href="{% url 'fees:payment_create' fs.pk %}" class="btn btn-primary btn-sm"><i class="fas fa-rupee-sign"></i> Pay</a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="text-muted" style="text-align:center; padding:20px;">No fee structures assigned.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Payments -->
+<div class="card">
+  <div class="card-header"><span class="card-title">Payment History</span></div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Receipt #</th><th>Amount</th><th>Date</th><th>Mode</th><th>Status</th><th>Action</th></tr>
+      </thead>
+      <tbody>
+        {% for p in payments %}
+        <tr>
+          <td class="text-mono" style="font-size:12px;">{{ p.receipt_number }}</td>
+          <td class="text-mono text-green">₹{{ p.amount_paid|floatformat:0 }}</td>
+          <td class="text-muted">{{ p.payment_date }}</td>
+          <td>{{ p.get_payment_mode_display }}</td>
+          <td><span class="badge badge-green">{{ p.get_status_display }}</span></td>
+          <td><a href="{% url 'fees:receipt' p.pk %}" class="btn btn-ghost btn-sm"><i class="fas fa-receipt"></i></a></td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="text-muted" style="text-align:center; padding:20px;">No payments recorded.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block title %}Delete Fee Structure{% endblock %}
+{% block page_title %}Delete Fee Structure{% endblock %}
+{% block content %}
+<div style="max-width:480px; margin:0 auto;">
+  <div class="card">
+    <div style="text-align:center; padding:10px 0 20px;">
+      <div style="font-size:40px; color:var(--danger); margin-bottom:12px;"><i class="fas fa-exclamation-triangle"></i></div>
+      <h2 style="font-size:18px; margin-bottom:8px;">Delete Fee Structure?</h2>
+      <p class="text-muted" style="font-size:13px;">
+        Delete fee structure for <strong style="color:var(--text);">{{ fee.student.full_name }}</strong>
+        (AY {{ fee.academic_year }}) and all its payment records? This cannot be undone.
+      </p>
+    </div>
+    <div style="display:flex; gap:10px; justify-content:center;">
+      <form method="post">{% csrf_token %}
+        <button type="submit" class="btn btn-danger"><i class="fas fa-trash"></i> Yes, Delete</button>
+      </form>
+      <a href="{% url 'fees:detail' fee.pk %}" class="btn btn-ghost">Cancel</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

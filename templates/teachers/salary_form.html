@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+{% block title %}{{ action }} Salary Record{% endblock %}
+{% block page_title %}{{ action }} Salary Record{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>{{ action }} Salary Record</h1>
+  <a href="{% url 'teachers:salary_list' %}" class="btn btn-ghost"><i class="fas fa-arrow-left"></i> Back</a>
+</div>
+
+<div style="max-width:640px;">
+  <div class="card">
+    <form method="post">
+      {% csrf_token %}
+      <div class="form-grid">
+        <div class="form-group" style="grid-column:1/-1;">
+          <label>Teacher *</label>
+          <select name="teacher" class="form-control" required {% if action == 'Edit' %}disabled{% endif %}>
+            <option value="">-- Select Teacher --</option>
+            {% for t in teachers %}
+            <option value="{{ t.pk }}" {% if salary.teacher.pk == t.pk %}selected{% endif %}>{{ t.full_name }} ({{ t.employee_id }})</option>
+            {% endfor %}
+          </select>
+          {% if action == 'Edit' %}
+          <input type="hidden" name="teacher" value="{{ salary.teacher.pk }}" />
+          {% endif %}
+        </div>
+        <div class="form-group">
+          <label>Month *</label>
+          <select name="month" class="form-control" required>
+            {% for val, label in months %}
+            <option value="{{ val }}" {% if salary.month == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Year *</label>
+          <select name="year" class="form-control" required>
+            {% for y in years %}
+            <option value="{{ y }}" {% if salary.year == y or current_year == y %}selected{% endif %}>{{ y }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Amount (₹) *</label>
+          <input type="number" name="amount" class="form-control" value="{{ salary.amount|default:'' }}" step="0.01" required />
+        </div>
+        <div class="form-group">
+          <label>Status</label>
+          <select name="status" class="form-control">
+            <option value="unpaid" {% if salary.status == 'unpaid' %}selected{% endif %}>Unpaid</option>
+            <option value="paid"   {% if salary.status == 'paid' %}selected{% endif %}>Paid</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Payment Date</label>
+          <input type="date" name="payment_date" class="form-control" value="{{ salary.payment_date|default:'' }}" />
+        </div>
+        <div class="form-group" style="grid-column:1/-1;">
+          <label>Remarks</label>
+          <textarea name="remarks" class="form-control">{{ salary.remarks|default:'' }}</textarea>
+        </div>
+      </div>
+      <div style="display:flex; gap:10px; margin-top:16px;">
+        <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save</button>
+        <a href="{% url 'teachers:salary_list' %}" class="btn btn-ghost">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% block title %}{{ action }} Expense{% endblock %}
+{% block page_title %}{{ action }} Expense{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>{{ action }} Expense</h1>
+  <a href="{% url 'expenses:list' %}" class="btn btn-ghost"><i class="fas fa-arrow-left"></i> Back</a>
+</div>
+
+<div style="max-width:640px;">
+  <div class="card">
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      <div class="form-grid">
+        <div class="form-group" style="grid-column:1/-1;">
+          <label>Title *</label>
+          <input type="text" name="title" class="form-control" value="{{ expense.title|default:'' }}" required placeholder="Brief expense description" />
+        </div>
+        <div class="form-group">
+          <label>Category *</label>
+          <select name="category" class="form-control" required>
+            <option value="">-- Select Category --</option>
+            {% for val, label in category_choices %}
+            <option value="{{ val }}" {% if expense.category == val %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Amount (₹) *</label>
+          <input type="number" name="amount" class="form-control" value="{{ expense.amount|default:'' }}" step="0.01" min="0.01" required />
+        </div>
+        <div class="form-group">
+          <label>Expense Date *</label>
+          <input type="date" name="expense_date" class="form-control" value="{{ expense.expense_date|default:today }}" required />
+        </div>
+        <div class="form-group">
+          <label>Receipt / Document</label>
+          <input type="file" name="receipt" class="form-control" />
+        </div>
+        <div class="form-group" style="grid-column:1/-1;">
+          <label>Description</label>
+          <textarea name="description" class="form-control" placeholder="Additional details…">{{ expense.description|default:'' }}</textarea>
+        </div>
+      </div>
+      <div style="display:flex; gap:10px; margin-top:16px;">
+        <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Save Expense</button>
+        <a href="{% url 'expenses:list' %}" class="btn btn-ghost">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

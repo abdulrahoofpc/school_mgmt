@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% block title %}Expenses{% endblock %}
+{% block page_title %}Expense Management{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Expenses</h1>
+    <div class="text-muted" style="font-size:12px; margin-top:4px;">
+      {{ total }} record{{ total|pluralize }} &nbsp;|&nbsp;
+      Total: <span class="text-red text-mono">₹{{ total_amount|floatformat:0 }}</span>
+    </div>
+  </div>
+  <a href="{% url 'expenses:create' %}" class="btn btn-primary"><i class="fas fa-plus"></i> Add Expense</a>
+</div>
+
+<div class="card">
+  <form method="get" class="search-bar">
+    <div class="search-input-wrap">
+      <i class="fas fa-search"></i>
+      <input type="text" name="q" value="{{ q }}" class="form-control search-input" placeholder="Search expense title…" />
+    </div>
+    <select name="category" class="form-control" style="width:auto; min-width:150px;">
+      <option value="">All Categories</option>
+      {% for val, label in category_choices %}
+      <option value="{{ val }}" {% if category == val %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <input type="date" name="date_from" value="{{ date_from }}" class="form-control" style="width:auto;" title="From date" />
+    <input type="date" name="date_to" value="{{ date_to }}" class="form-control" style="width:auto;" title="To date" />
+    <button type="submit" class="btn btn-ghost"><i class="fas fa-filter"></i> Filter</button>
+    {% if q or category or date_from or date_to %}
+    <a href="{% url 'expenses:list' %}" class="btn btn-ghost"><i class="fas fa-times"></i> Clear</a>
+    {% endif %}
+  </form>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>#</th><th>Title</th><th>Category</th><th>Amount</th><th>Date</th><th>Added By</th><th>Actions</th></tr>
+      </thead>
+      <tbody>
+        {% for e in page_obj %}
+        <tr>
+          <td class="text-muted text-mono" style="font-size:11px;">{{ forloop.counter }}</td>
+          <td>
+            <div style="font-weight:500;">{{ e.title }}</div>
+            {% if e.description %}<div class="text-muted" style="font-size:11px;">{{ e.description|truncatechars:60 }}</div>{% endif %}
+          </td>
+          <td>
+            <span class="badge badge-blue">{{ e.get_category_display }}</span>
+          </td>
+          <td class="text-mono text-red">₹{{ e.amount|floatformat:0 }}</td>
+          <td class="text-muted">{{ e.expense_date }}</td>
+          <td class="text-muted" style="font-size:12px;">{{ e.created_by.get_full_name|default:e.created_by.username|default:"—" }}</td>
+          <td>
+            <div style="display:flex; gap:6px;">
+              <a href="{% url 'expenses:edit' e.pk %}" class="btn btn-ghost btn-sm"><i class="fas fa-pen"></i></a>
+              <a href="{% url 'expenses:delete' e.pk %}" class="btn btn-ghost btn-sm" style="color:var(--danger);"><i class="fas fa-trash"></i></a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7" style="text-align:center; padding:40px; color:var(--muted);">
+          <i class="fas fa-shopping-cart" style="font-size:28px; display:block; margin-bottom:10px; opacity:.3;"></i>
+          No expenses found.
+        </td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if page_obj.has_other_pages %}
+  <div class="pagination">
+    {% if page_obj.has_previous %}<a href="?page={{ page_obj.previous_page_number }}&q={{ q }}&category={{ category }}" class="page-btn"><i class="fas fa-chevron-left"></i></a>{% endif %}
+    {% for num in page_obj.paginator.page_range %}
+    <a href="?page={{ num }}&q={{ q }}&category={{ category }}" class="page-btn {% if page_obj.number == num %}active{% endif %}">{{ num }}</a>
+    {% endfor %}
+    {% if page_obj.has_next %}<a href="?page={{ page_obj.next_page_number }}&q={{ q }}&category={{ category }}" class="page-btn"><i class="fas fa-chevron-right"></i></a>{% endif %}
+    <span class="page-info">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

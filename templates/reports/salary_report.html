@@ -1,0 +1,83 @@
+{% extends 'base.html' %}
+{% block title %}Salary Report{% endblock %}
+{% block page_title %}Salary Report{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>Salary Report</h1>
+  <button onclick="window.print()" class="btn btn-ghost"><i class="fas fa-print"></i> Print</button>
+</div>
+
+<div class="card" style="margin-bottom:16px;">
+  <form method="get" class="search-bar">
+    <select name="month" class="form-control" style="width:auto; min-width:130px;">
+      <option value="">All Months</option>
+      {% for val, label in months %}
+      <option value="{{ val }}" {% if month == val|stringformat:"s" %}selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <select name="year" class="form-control" style="width:auto; min-width:100px;">
+      {% for y in years %}
+      <option value="{{ y }}" {% if year == y|stringformat:"s" %}selected{% endif %}>{{ y }}</option>
+      {% endfor %}
+    </select>
+    <select name="status" class="form-control" style="width:auto; min-width:110px;">
+      <option value="">All Status</option>
+      <option value="paid"   {% if status == 'paid' %}selected{% endif %}>Paid</option>
+      <option value="unpaid" {% if status == 'unpaid' %}selected{% endif %}>Unpaid</option>
+    </select>
+    <button type="submit" class="btn btn-ghost"><i class="fas fa-filter"></i> Generate</button>
+    <a href="{% url 'reports:salary' %}" class="btn btn-ghost"><i class="fas fa-times"></i> Clear</a>
+  </form>
+</div>
+
+<div class="stats-grid" style="margin-bottom:16px;">
+  <div class="stat-card">
+    <div class="stat-icon blue"><i class="fas fa-wallet"></i></div>
+    <div><div class="stat-value">₹{{ total_amount|floatformat:0 }}</div><div class="stat-label">Total Salary</div></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon green"><i class="fas fa-check-circle"></i></div>
+    <div><div class="stat-value">₹{{ total_paid|floatformat:0 }}</div><div class="stat-label">Paid</div></div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon yellow"><i class="fas fa-clock"></i></div>
+    <div><div class="stat-value">₹{{ total_unpaid|floatformat:0 }}</div><div class="stat-label">Unpaid</div></div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>#</th><th>Teacher</th><th>Subject</th><th>Month</th><th>Year</th><th>Amount</th><th>Status</th><th>Payment Date</th></tr>
+      </thead>
+      <tbody>
+        {% for r in records %}
+        <tr>
+          <td class="text-muted text-mono" style="font-size:11px;">{{ forloop.counter }}</td>
+          <td><a href="{% url 'teachers:detail' r.teacher.pk %}" style="color:var(--text); text-decoration:none; font-weight:500;">{{ r.teacher.full_name }}</a></td>
+          <td><span class="badge badge-blue">{{ r.teacher.get_subject_display }}</span></td>
+          <td>{{ r.get_month_display }}</td>
+          <td class="text-mono">{{ r.year }}</td>
+          <td class="text-mono text-green">₹{{ r.amount|floatformat:0 }}</td>
+          <td><span class="badge {% if r.status == 'paid' %}badge-green{% else %}badge-yellow{% endif %}">{{ r.get_status_display }}</span></td>
+          <td class="text-muted">{{ r.payment_date|default:"—" }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="8" class="text-muted" style="text-align:center; padding:30px;">No records found.</td></tr>
+        {% endfor %}
+      </tbody>
+      {% if records %}
+      <tfoot>
+        <tr style="background:var(--bg3); font-weight:700;">
+          <td colspan="5" style="padding:10px 14px;">TOTAL</td>
+          <td class="text-mono text-green" style="padding:10px 14px;">₹{{ total_amount|floatformat:0 }}</td>
+          <td colspan="2"></td>
+        </tr>
+      </tfoot>
+      {% endif %}
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% block title %}{{ action }} User{% endblock %}
+{% block page_title %}{{ action }} User{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>{{ action }} User</h1>
+  <a href="{% url 'accounts:user_list' %}" class="btn btn-ghost"><i class="fas fa-arrow-left"></i> Back</a>
+</div>
+
+<div style="max-width:600px;">
+  <div class="card">
+    <form method="post">
+      {% csrf_token %}
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Username *</label>
+          <input type="text" name="username" class="form-control" value="{{ edit_user.username|default:'' }}"
+            {% if action == 'Edit' %}readonly{% endif %} required />
+        </div>
+        <div class="form-group">
+          <label>Role *</label>
+          <select name="role" class="form-control" required>
+            <option value="admin"      {% if edit_user.role == 'admin' %}selected{% endif %}>Admin</option>
+            <option value="teacher"    {% if edit_user.role == 'teacher' %}selected{% endif %}>Teacher</option>
+            <option value="accountant" {% if edit_user.role == 'accountant' %}selected{% endif %}>Accountant</option>
+            <option value="student"    {% if edit_user.role == 'student' %}selected{% endif %}>Student</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>First Name</label>
+          <input type="text" name="first_name" class="form-control" value="{{ edit_user.first_name|default:'' }}" />
+        </div>
+        <div class="form-group">
+          <label>Last Name</label>
+          <input type="text" name="last_name" class="form-control" value="{{ edit_user.last_name|default:'' }}" />
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" name="email" class="form-control" value="{{ edit_user.email|default:'' }}" />
+        </div>
+        <div class="form-group">
+          <label>Phone</label>
+          <input type="tel" name="phone" class="form-control" value="{{ edit_user.phone|default:'' }}" />
+        </div>
+        <div class="form-group" style="grid-column:1/-1;">
+          <label>Password {% if action == 'Edit' %}<span class="text-muted" style="font-weight:400;">(leave blank to keep)</span>{% else %}*{% endif %}</label>
+          <input type="password" name="password" class="form-control"
+            {% if action == 'Create' %}required{% endif %}
+            placeholder="{% if action == 'Edit' %}Leave blank to keep current…{% else %}Set password{% endif %}"
+            autocomplete="new-password" />
+        </div>
+      </div>
+      <div style="display:flex; gap:10px; margin-top:16px;">
+        <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> {{ action }} User</button>
+        <a href="{% url 'accounts:user_list' %}" class="btn btn-ghost">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

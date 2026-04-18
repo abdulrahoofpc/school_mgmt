@@ -1,0 +1,171 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-icon blue"><i class="fas fa-user-graduate"></i></div>
+    <div>
+      <div class="stat-value">{{ total_students }}</div>
+      <div class="stat-label">Total Students</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon purple"><i class="fas fa-chalkboard-teacher"></i></div>
+    <div>
+      <div class="stat-value">{{ total_teachers }}</div>
+      <div class="stat-label">Total Teachers</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon green"><i class="fas fa-arrow-down"></i></div>
+    <div>
+      <div class="stat-value text-green">₹{{ total_income|floatformat:0 }}</div>
+      <div class="stat-label">Total Income</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon red"><i class="fas fa-arrow-up"></i></div>
+    <div>
+      <div class="stat-value text-red">₹{{ total_expenses|floatformat:0 }}</div>
+      <div class="stat-label">Total Expenses</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon {% if profit_loss >= 0 %}green{% else %}red{% endif %}">
+      <i class="fas fa-balance-scale"></i>
+    </div>
+    <div>
+      <div class="stat-value {% if profit_loss >= 0 %}text-green{% else %}text-red{% endif %}">
+        ₹{{ profit_loss|floatformat:0 }}
+      </div>
+      <div class="stat-label">{% if profit_loss >= 0 %}Net Profit{% else %}Net Loss{% endif %}</div>
+    </div>
+  </div>
+</div>
+
+<!-- Quick alerts row -->
+<div style="display:flex; gap:12px; margin-bottom:20px; flex-wrap:wrap;">
+  {% if pending_count > 0 %}
+  <a href="{% url 'fees:list' %}" style="text-decoration:none;">
+    <div class="alert alert-warning" style="margin:0; cursor:pointer;">
+      <i class="fas fa-exclamation-triangle"></i>
+      {{ pending_count }} fee structure{{ pending_count|pluralize }} with outstanding balance
+    </div>
+  </a>
+  {% endif %}
+  {% if unpaid_salaries > 0 %}
+  <a href="{% url 'teachers:salary_list' %}" style="text-decoration:none;">
+    <div class="alert alert-info" style="margin:0; cursor:pointer;">
+      <i class="fas fa-info-circle"></i>
+      {{ unpaid_salaries }} unpaid salary record{{ unpaid_salaries|pluralize }} this month
+    </div>
+  </a>
+  {% endif %}
+</div>
+
+<!-- Chart -->
+<div style="display:grid; grid-template-columns:2fr 1fr; gap:18px; margin-bottom:20px;">
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Income vs Expenses (Last 12 Months)</span>
+    </div>
+    <canvas id="mainChart" height="100"></canvas>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Quick Actions</span>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:8px;">
+      <a href="{% url 'students:create' %}" class="btn btn-primary"><i class="fas fa-plus"></i> Add Student</a>
+      <a href="{% url 'teachers:create' %}" class="btn btn-blue"><i class="fas fa-plus"></i> Add Teacher</a>
+      <a href="{% url 'fees:create' %}" class="btn btn-ghost"><i class="fas fa-file-invoice-dollar"></i> Create Fee Structure</a>
+      <a href="{% url 'expenses:create' %}" class="btn btn-ghost"><i class="fas fa-shopping-cart"></i> Record Expense</a>
+      <a href="{% url 'teachers:salary_create' %}" class="btn btn-ghost"><i class="fas fa-wallet"></i> Record Salary</a>
+      <a href="{% url 'reports:financial' %}" class="btn btn-ghost"><i class="fas fa-chart-line"></i> Financial Summary</a>
+    </div>
+  </div>
+</div>
+
+<!-- Recent Payments -->
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">Recent Payments</span>
+    <a href="{% url 'fees:payment_list' %}" class="btn btn-ghost btn-sm">View All</a>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Receipt #</th>
+          <th>Student</th>
+          <th>Amount</th>
+          <th>Date</th>
+          <th>Mode</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in recent_payments %}
+        <tr>
+          <td class="text-mono" style="font-size:12px;">{{ p.receipt_number }}</td>
+          <td>{{ p.student.full_name }}</td>
+          <td class="text-mono text-green">₹{{ p.amount_paid|floatformat:0 }}</td>
+          <td class="text-muted">{{ p.payment_date }}</td>
+          <td>{{ p.get_payment_mode_display }}</td>
+          <td>
+            <span class="badge {% if p.status == 'paid' %}badge-green{% elif p.status == 'partial' %}badge-yellow{% else %}badge-red{% endif %}">
+              {{ p.get_status_display }}
+            </span>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6" class="text-muted" style="text-align:center; padding:30px;">No payments recorded yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const ctx = document.getElementById('mainChart').getContext('2d');
+new Chart(ctx, {
+  type: 'bar',
+  data: {
+    labels: {{ months_labels|safe }},
+    datasets: [
+      {
+        label: 'Income',
+        data: {{ income_data|safe }},
+        backgroundColor: 'rgba(46,160,67,0.7)',
+        borderColor: 'rgba(46,160,67,1)',
+        borderWidth: 1,
+        borderRadius: 4,
+      },
+      {
+        label: 'Expenses',
+        data: {{ expense_data|safe }},
+        backgroundColor: 'rgba(218,54,51,0.7)',
+        borderColor: 'rgba(218,54,51,1)',
+        borderWidth: 1,
+        borderRadius: 4,
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { labels: { color: '#8b949e', font: { family: 'Sora' } } }
+    },
+    scales: {
+      x: { ticks: { color: '#8b949e', font: { size: 10 } }, grid: { color: '#30363d' } },
+      y: { ticks: { color: '#8b949e', callback: v => '₹' + v.toLocaleString() }, grid: { color: '#30363d' } }
+    }
+  }
+});
+</script>
+{% endblock %}

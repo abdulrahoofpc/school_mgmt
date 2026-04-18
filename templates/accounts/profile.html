@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% block title %}My Profile{% endblock %}
+{% block page_title %}My Profile{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1>My Profile</h1>
+</div>
+
+<div style="max-width:600px;">
+  <div class="card">
+    <div style="display:flex; align-items:center; gap:16px; margin-bottom:24px; padding-bottom:20px; border-bottom:1px solid var(--border);">
+      <div style="width:64px; height:64px; border-radius:50%; background:linear-gradient(135deg,var(--accent2),var(--accent)); display:flex; align-items:center; justify-content:center; font-size:24px; font-weight:700; color:#fff; flex-shrink:0;">
+        {{ user.first_name|first|upper }}{{ user.last_name|first|upper }}
+      </div>
+      <div>
+        <div style="font-size:18px; font-weight:700;">{{ user.get_full_name|default:user.username }}</div>
+        <div class="text-muted" style="font-size:13px;">{{ user.email }}</div>
+        <span class="badge badge-blue" style="margin-top:6px;">{{ user.get_role_display }}</span>
+      </div>
+    </div>
+
+    <form method="post">
+      {% csrf_token %}
+      <div class="form-grid">
+        <div class="form-group">
+          <label>First Name</label>
+          <input type="text" name="first_name" class="form-control" value="{{ user.first_name }}" />
+        </div>
+        <div class="form-group">
+          <label>Last Name</label>
+          <input type="text" name="last_name" class="form-control" value="{{ user.last_name }}" />
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input type="email" name="email" class="form-control" value="{{ user.email }}" />
+        </div>
+        <div class="form-group">
+          <label>Phone</label>
+          <input type="tel" name="phone" class="form-control" value="{{ user.phone }}" />
+        </div>
+        <div class="form-group" style="grid-column:1/-1;">
+          <label>New Password <span class="text-muted" style="font-weight:400;">(leave blank to keep current)</span></label>
+          <input type="password" name="password" class="form-control" placeholder="Enter new password…" autocomplete="new-password" />
+        </div>
+      </div>
+      <div style="display:flex; gap:10px; margin-top:16px;">
+        <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> Update Profile</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="card" style="margin-top:16px;">
+    <div class="card-header"><span class="card-title">Account Info</span></div>
+    <table style="font-size:13px;">
+      <tr><td class="text-muted" style="padding:7px 0; width:140px;">Username</td><td class="text-mono">{{ user.username }}</td></tr>
+      <tr><td class="text-muted" style="padding:7px 0;">Role</td><td>{{ user.get_role_display }}</td></tr>
+      <tr><td class="text-muted" style="padding:7px 0;">Joined</td><td>{{ user.date_joined|date:"d M Y" }}</td></tr>
+      <tr><td class="text-muted" style="padding:7px 0;">Last Login</td><td>{{ user.last_login|date:"d M Y, H:i" }}</td></tr>
+    </table>
+  </div>
+</div>
+{% endblock %}
