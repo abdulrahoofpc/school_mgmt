@@ -310,3 +310,26 @@ if not DEBUG:
     CSRF_COOKIE_SECURE             = True
     SECURE_HSTS_SECONDS            = 31536000
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+
+# ── Auto Create Superuser (Render) ────────────────────────────────────────────
+if os.environ.get("RENDER"):
+    try:
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+
+        username = os.environ.get("DJANGO_SUPERUSER_USERNAME", "admin")
+        email = os.environ.get("DJANGO_SUPERUSER_EMAIL", "admin@gmail.com")
+        password = os.environ.get("DJANGO_SUPERUSER_PASSWORD", "admin123")
+
+        if not User.objects.filter(username=username).exists():
+            User.objects.create_superuser(
+                username=username,
+                email=email,
+                password=password
+            )
+            print("✅ Superuser created successfully")
+        else:
+            print("⚠️ Superuser already exists")
+
+    except Exception as e:
+        print("❌ Superuser creation error:", e)
