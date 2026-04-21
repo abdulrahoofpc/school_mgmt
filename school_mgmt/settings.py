@@ -126,15 +126,17 @@
 
 # CORS_ALLOW_ALL_ORIGINS = True
 
+# ------------------------------------------------------------------
+
 import os
 from pathlib import Path
 from datetime import timedelta
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# ── Try to import decouple, fall back to os.environ ───────────────────────────
+# ── Environment Helper ────────────────────────────────────────────────────────
 try:
-    from decouple import config, Csv
+    from decouple import config
     def get(key, default=None, cast=None):
         return config(key, default=default, cast=cast)
 except ImportError:
@@ -151,12 +153,13 @@ SECRET_KEY = os.environ.get(
     'SECRET_KEY',
     'django-insecure-change-this-in-production-use-env-variable'
 )
+
 DEBUG = os.environ.get('DEBUG', 'False').lower() in ('true', '1', 'yes')
 
 _allowed = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1,.onrender.com')
 ALLOWED_HOSTS = [h.strip() for h in _allowed.split(',') if h.strip()]
 
-# ── Apps ───────────────────────────────────────────────────────────────────────
+# ── Applications ──────────────────────────────────────────────────────────────
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -164,11 +167,13 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    # Third party
+
+    # Third-party
     'rest_framework',
     'rest_framework_simplejwt',
     'django_filters',
     'corsheaders',
+
     # Local apps
     'accounts',
     'students',
@@ -179,7 +184,7 @@ INSTALLED_APPS = [
     'core',
 ]
 
-# ── Middleware ─────────────────────────────────────────────────────────────────
+# ── Middleware ────────────────────────────────────────────────────────────────
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
@@ -194,6 +199,7 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'school_mgmt.urls'
 
+# ── Templates ─────────────────────────────────────────────────────────────────
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -212,10 +218,8 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'school_mgmt.wsgi.application'
 
-# ── Database ───────────────────────────────────────────────────────────────────
-# On Render  → DATABASE_URL env var is set → connects to Neon Postgres
-# Locally    → DATABASE_URL not set → uses local DB_* vars
-DATABASE_URL = os.environ.get('DATABASE_URL', None)
+# ── Database ──────────────────────────────────────────────────────────────────
+DATABASE_URL = os.environ.get('DATABASE_URL')
 
 if DATABASE_URL:
     import dj_database_url
@@ -229,19 +233,19 @@ if DATABASE_URL:
 else:
     DATABASES = {
         'default': {
-            'ENGINE':   'django.db.backends.postgresql',
-            'NAME':     os.environ.get('DB_NAME', 'school_mgmt'),
-            'USER':     os.environ.get('DB_USER', 'postgres'),
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.environ.get('DB_NAME', 'school_mgmt'),
+            'USER': os.environ.get('DB_USER', 'postgres'),
             'PASSWORD': os.environ.get('DB_PASSWORD', 'admin@123'),
-            'HOST':     os.environ.get('DB_HOST', 'localhost'),
-            'PORT':     os.environ.get('DB_PORT', '5434'),
+            'HOST': os.environ.get('DB_HOST', 'localhost'),
+            'PORT': os.environ.get('DB_PORT', '5434'),
         }
     }
 
-# ── Custom user model ──────────────────────────────────────────────────────────
+# ── Custom User Model ─────────────────────────────────────────────────────────
 AUTH_USER_MODEL = 'accounts.User'
 
-# ── Password Validation ────────────────────────────────────────────────────────
+# ── Password Validation ───────────────────────────────────────────────────────
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
@@ -249,30 +253,30 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-# ── Internationalisation ───────────────────────────────────────────────────────
+# ── Internationalization ───────────────────────────────────────────────────────
 LANGUAGE_CODE = 'en-us'
-TIME_ZONE     = 'Asia/Kolkata'
-USE_I18N      = True
-USE_TZ        = True
+TIME_ZONE = 'Asia/Kolkata'
+USE_I18N = True
+USE_TZ = True
 
-# ── Static Files ───────────────────────────────────────────────────────────────
-STATIC_URL       = '/static/'
-STATICFILES_DIRS = [BASE_DIR / 'static']
-STATIC_ROOT      = BASE_DIR / 'staticfiles'
+# ── Static Files ──────────────────────────────────────────────────────────────
+STATIC_URL = '/static/'
+STATICFILES_DIRS = [BASE_DIR / 'static']  # make sure folder exists
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-# ── Media Files ────────────────────────────────────────────────────────────────
-MEDIA_URL  = '/media/'
+# ── Media Files ───────────────────────────────────────────────────────────────
+MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-# ── Auth ───────────────────────────────────────────────────────────────────────
-LOGIN_URL           = '/accounts/login/'
-LOGIN_REDIRECT_URL  = '/'
+# ── Auth Redirects ────────────────────────────────────────────────────────────
+LOGIN_URL = '/accounts/login/'
+LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/accounts/login/'
 
-# ── REST Framework ─────────────────────────────────────────────────────────────
+# ── Django REST Framework ─────────────────────────────────────────────────────
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
         'rest_framework_simplejwt.authentication.JWTAuthentication',
@@ -290,46 +294,23 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 20,
 }
 
-# ── Simple JWT ─────────────────────────────────────────────────────────────────
+# ── JWT Settings ──────────────────────────────────────────────────────────────
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME':  timedelta(hours=1),
+    'ACCESS_TOKEN_LIFETIME': timedelta(hours=1),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
-    'ROTATE_REFRESH_TOKENS':  True,
+    'ROTATE_REFRESH_TOKENS': True,
 }
 
-# ── CORS ───────────────────────────────────────────────────────────────────────
+# ── CORS ──────────────────────────────────────────────────────────────────────
 CORS_ALLOW_ALL_ORIGINS = os.environ.get(
     'CORS_ALLOW_ALL_ORIGINS', 'False'
 ).lower() in ('true', '1', 'yes')
 
-# ── HTTPS security (production only) ──────────────────────────────────────────
+# ── Production Security ───────────────────────────────────────────────────────
 if not DEBUG:
-    SECURE_PROXY_SSL_HEADER        = ('HTTP_X_FORWARDED_PROTO', 'https')
-    SECURE_SSL_REDIRECT            = True
-    SESSION_COOKIE_SECURE          = True
-    CSRF_COOKIE_SECURE             = True
-    SECURE_HSTS_SECONDS            = 31536000
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = 31536000
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-
-# ── Auto Create Superuser (Render) ────────────────────────────────────────────
-if os.environ.get("RENDER"):
-    try:
-        from django.contrib.auth import get_user_model
-        User = get_user_model()
-
-        username = os.environ.get("DJANGO_SUPERUSER_USERNAME", "admin")
-        email = os.environ.get("DJANGO_SUPERUSER_EMAIL", "admin@gmail.com")
-        password = os.environ.get("DJANGO_SUPERUSER_PASSWORD", "admin123")
-
-        if not User.objects.filter(username=username).exists():
-            User.objects.create_superuser(
-                username=username,
-                email=email,
-                password=password
-            )
-            print("✅ Superuser created successfully")
-        else:
-            print("⚠️ Superuser already exists")
-
-    except Exception as e:
-        print("❌ Superuser creation error:", e)
