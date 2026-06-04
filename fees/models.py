@@ -68,6 +68,10 @@ class Payment(models.Model):
     receipt_number = models.CharField(max_length=30, unique=True)
     amount_paid = models.DecimalField(max_digits=10, decimal_places=2)
     payment_date = models.DateField()
+    # The month(s) the fee payment is *for*. Stored as comma-separated 'YYYY-MM'
+    # tokens (e.g. "2026-07,2026-08"). Distinct from payment_date, which is the
+    # date the money was actually collected.
+    fee_month = models.CharField(max_length=200, blank=True)
     payment_mode = models.CharField(max_length=20, choices=PAYMENT_MODE_CHOICES, default='cash')
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='paid')
     remarks = models.TextField(blank=True)
@@ -78,6 +82,33 @@ class Payment(models.Model):
 
     def __str__(self):
         return f"Receipt #{self.receipt_number} - {self.student.full_name}"
+
+    @property
+    def fee_months_display(self):
+        """Human-readable month list, e.g. 'July 2026, August 2026'."""
+        import datetime
+        tokens = [t.strip() for t in (self.fee_month or '').split(',') if t.strip()]
+        labels = []
+        for tok in tokens:
+            try:
+                year, month = tok.split('-')
+                labels.append(datetime.date(int(year), int(month), 1).strftime('%B %Y'))
+            except (ValueError, TypeError):
+                labels.append(tok)
+        return ', '.join(labels)
+
+    @property
+    def previous_paid(self):
+        """Total amount paid towards this fee structure BEFORE this receipt."""
+        agg = self.fee_structure.payments.filter(id__lt=self.id).aggregate(
+            total=models.Sum('amount_paid')
+        )['total']
+        return agg or 0
+
+    @property
+    def balance_after(self):
+        """Outstanding balance on the fee structure after this receipt."""
+        return self.fee_structure.total_fee - (self.previous_paid + self.amount_paid)
 
     def save(self, *args, **kwargs):
         if not self.receipt_number:

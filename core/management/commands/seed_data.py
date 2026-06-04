@@ -128,10 +128,12 @@ class Command(BaseCommand):
                 scenario = random.choice(['full', 'partial', 'none'])
                 if scenario in ('full', 'partial'):
                     amount = fs.total_fee if scenario == 'full' else random.randint(5000, int(fs.total_fee) - 1000)
+                    pay_month = random.randint(6, 9)
                     p = Payment(
                         fee_structure=fs, student=s,
                         amount_paid=amount,
-                        payment_date=datetime.date(year, random.randint(6, 9), random.randint(1, 28)),
+                        payment_date=datetime.date(year, pay_month, random.randint(1, 28)),
+                        fee_month=f"{year}-{pay_month:02d}",
                         payment_mode=random.choice(['cash', 'online', 'upi']),
                         status='paid' if scenario == 'full' else 'partial',
                     )

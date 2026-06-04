@@ -31,18 +31,22 @@ def dashboard(request):
     expense_data = []
 
     for i in range(11, -1, -1):
-        d = today.replace(day=1) - datetime.timedelta(days=i * 30)
+        # Step back i whole months from the first of the current month
+        # (using 30-day steps drifts and can skip/duplicate months).
+        total = (current_year * 12 + (current_month - 1)) - i
+        d_year, d_month = divmod(total, 12)
+        d_month += 1
         month_income = Payment.objects.filter(
-            payment_date__year=d.year, payment_date__month=d.month
+            payment_date__year=d_year, payment_date__month=d_month
         ).aggregate(t=Sum('amount_paid'))['t'] or 0
         month_expense = Expense.objects.filter(
-            expense_date__year=d.year, expense_date__month=d.month
+            expense_date__year=d_year, expense_date__month=d_month
         ).aggregate(t=Sum('amount'))['t'] or 0
         month_salary = SalaryRecord.objects.filter(
-            year=d.year, month=d.month, status='paid'
+            year=d_year, month=d_month, status='paid'
         ).aggregate(t=Sum('amount'))['t'] or 0
 
-        months_labels.append(d.strftime('%b %Y'))
+        months_labels.append(datetime.date(d_year, d_month, 1).strftime('%b %Y'))
         income_data.append(float(month_income))
         expense_data.append(float(month_expense + month_salary))
 

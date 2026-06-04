@@ -45,6 +45,7 @@ def expense_list(request):
         'category_choices': CATEGORY_CHOICES,
         'total_amount': total_amount,
         'total': queryset.count(),
+        'month_choices': _expense_month_choices(),
     })
 
 
@@ -107,3 +108,65 @@ def expense_delete(request, pk):
         messages.success(request, 'Expense deleted.')
         return redirect('expenses:list')
     return render(request, 'expenses/expense_confirm_delete.html', {'expense': expense})
+
+
+@login_required
+def expense_receipt(request, pk):
+    """Print-ready receipt for a single expense entry."""
+    expense = get_object_or_404(Expense.objects.select_related('created_by'), pk=pk)
+    return render(request, 'expenses/expense_receipt.html', {'expense': expense})
+
+
+def _expense_month_choices():
+    """Distinct YYYY-MM values for which expenses exist, newest first."""
+    import datetime
+    months = set()
+    for d in Expense.objects.values_list('expense_date', flat=True):
+        if d:
+            months.add((d.year, d.month))
+    out = []
+    for y, m in sorted(months, reverse=True):
+        out.append((f"{y}-{m:02d}", datetime.date(y, m, 1).strftime('%B %Y')))
+    return out
+
+
+@login_required
+def expense_monthly_print(request):
+    """Print-ready report listing all expenses for a selected month."""
+    import datetime
+    month = request.GET.get('month', '')
+    if not month:
+        today = datetime.date.today()
+        month = f"{today.year}-{today.month:02d}"
+
+    expenses = Expense.objects.none()
+    total_amount = 0
+    category_totals = []
+    label = month
+    try:
+        year, mon = month.split('-')
+        year, mon = int(year), int(mon)
+        expenses = Expense.objects.filter(
+            expense_date__year=year, expense_date__month=mon
+        ).select_related('created_by').order_by('expense_date')
+        total_amount = expenses.aggregate(t=Sum('amount'))['t'] or 0
+        label = datetime.date(year, mon, 1).strftime('%B %Y')
+        # per-category breakdown
+        cat_map = {}
+        for e in expenses:
+            cat_map.setdefault(e.get_category_display(), 0)
+            cat_map[e.get_category_display()] += e.amount
+        category_totals = sorted(cat_map.items(), key=lambda kv: kv[1], reverse=True)
+    except (ValueError, TypeError):
+        messages.error(request, 'Invalid month selected.')
+
+    return render(request, 'expenses/expense_monthly_print.html', {
+        'expenses': expenses,
+        'total_amount': total_amount,
+        'month_value': month,
+        'month_label': label,
+        'category_totals': category_totals,
+        'count': expenses.count() if expenses is not None else 0,
+        'month_choices': _expense_month_choices(),
+        'today': datetime.date.today(),
+    })

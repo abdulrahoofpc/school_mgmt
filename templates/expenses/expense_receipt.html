@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Expense Receipt – TSM Public School</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', sans-serif; background: #0d1117; color: #e6edf3; }
+
+    .top-bar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 28px; background: rgba(22,27,34,0.95);
+      border-bottom: 1px solid #30363d; position: sticky; top: 0; z-index: 100;
+    }
+    .top-bar-title { font-size: 1.1rem; font-weight: 700; color: #f0f6fc; }
+    .top-bar-actions { display: flex; gap: 10px; }
+    .btn-print, .btn-back {
+      display: flex; align-items: center; gap: 6px; padding: 8px 18px;
+      border-radius: 8px; font-size: 0.85rem; font-weight: 600; cursor: pointer;
+      font-family: 'Inter', sans-serif; text-decoration: none; transition: all 0.2s;
+    }
+    .btn-print { background: #1a7f37; border: 1px solid #2ea043; color: #fff; }
+    .btn-print:hover { background: #2ea043; }
+    .btn-back { background: rgba(48,54,65,0.6); border: 1px solid #30363d; color: #c9d1d9; }
+    .btn-back:hover { background: rgba(48,54,65,1); color: #fff; }
+
+    .page-wrap { padding: 36px 20px 60px; display: flex; justify-content: center; }
+    .receipt-card {
+      width: 100%; max-width: 740px; background: rgba(22, 27, 34, 0.92);
+      border: 1px solid #30363d; border-radius: 18px; overflow: hidden;
+      box-shadow: 0 24px 80px rgba(0,0,0,0.6);
+    }
+
+    .school-header {
+      padding: 32px 40px 26px; text-align: center; border-bottom: 1px solid #21262d;
+      background: linear-gradient(180deg, rgba(13,71,161,0.08) 0%, transparent 100%);
+    }
+    .school-name { font-size: 1.45rem; font-weight: 800; color: #f0f6fc; letter-spacing: 0.5px; }
+    .school-subtitle { font-size: 0.78rem; color: #8b949e; margin-top: 2px; }
+    .school-reg { font-size: 0.72rem; color: #58a6ff; margin-top: 4px; }
+    .school-address { font-size: 0.8rem; color: #8b949e; margin-top: 8px; }
+
+    .receipt-meta {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      padding: 22px 40px; border-bottom: 1px solid #21262d;
+    }
+    .receipt-big-title { font-size: 1.1rem; font-weight: 800; color: #f0f6fc; letter-spacing: 1px; text-transform: uppercase; }
+    .receipt-official { font-size: 0.76rem; color: #8b949e; margin-top: 3px; }
+    .receipt-number-block { text-align: right; }
+    .receipt-number { font-size: 1rem; font-weight: 700; color: #58a6ff; font-family: 'Courier New', monospace; }
+    .receipt-date { font-size: 0.78rem; color: #8b949e; margin-top: 3px; }
+
+    .info-grid {
+      margin: 20px 40px; background: rgba(30,36,45,0.6); border: 1px solid #21262d;
+      border-radius: 12px; display: grid; grid-template-columns: 1fr 1fr; overflow: hidden;
+    }
+    .info-cell { padding: 16px 20px; border-bottom: 1px solid #21262d; }
+    .info-cell:nth-child(odd) { border-right: 1px solid #21262d; }
+    .info-cell:nth-last-child(-n+2) { border-bottom: none; }
+    .info-cell.full-width { grid-column: 1 / -1; border-right: none; }
+    .info-key { font-size: 0.65rem; font-weight: 600; color: #6e7681; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 5px; }
+    .info-val { font-size: 0.95rem; font-weight: 600; color: #f0f6fc; }
+
+    .amount-box {
+      margin: 0 40px 20px; padding: 20px; border-radius: 12px;
+      background: rgba(13,71,161,0.08); border: 1px solid #1976d2;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .amount-box .lbl { font-size: 0.8rem; color: #8b949e; text-transform: uppercase; letter-spacing: 1px; }
+    .amount-box .val { font-size: 1.6rem; font-weight: 800; color: #ff7b72; font-family: 'Courier New', monospace; }
+
+    .desc-box { margin: 0 40px 20px; }
+    .desc-box .info-key { margin-bottom: 6px; }
+    .desc-box .desc-text { font-size: 0.9rem; color: #c9d1d9; line-height: 1.5; }
+
+    .badge-cat {
+      display: inline-block; padding: 5px 14px; border-radius: 20px;
+      font-size: 0.78rem; font-weight: 700;
+      background: rgba(56,139,253,0.15); border: 1px solid rgba(56,139,253,0.4); color: #58a6ff;
+    }
+
+    .sig-section { margin: 10px 40px 32px; display: flex; justify-content: space-between; padding-top: 10px; }
+    .sig-box { text-align: center; }
+    .sig-line { width: 140px; height: 1px; background: #30363d; margin: 36px auto 8px; }
+    .sig-label { font-size: 0.72rem; color: #6e7681; text-transform: uppercase; letter-spacing: 0.8px; }
+
+    .watermark {
+      text-align: center; padding: 14px; background: rgba(13,71,161,0.06);
+      border-top: 1px solid #21262d; font-size: 0.72rem; color: #484f58;
+    }
+
+    @media print {
+      body { background: #fff; color: #000; }
+      .top-bar { display: none; }
+      .page-wrap { padding: 0; }
+      .receipt-card { box-shadow: none; border: 1px solid #ccc; border-radius: 0; background: #fff; }
+      .school-header { background: none; }
+      .school-name, .receipt-big-title, .info-val, .desc-text { color: #000 !important; }
+      .receipt-number { color: #1565c0 !important; }
+      .amount-box .val { color: #b91c1c !important; }
+      .info-grid, .amount-box { border-color: #ddd !important; }
+      .info-cell { border-color: #ddd !important; }
+      .watermark { background: none; color: #888; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="top-bar">
+  <div class="top-bar-title">Expense Receipt</div>
+  <div class="top-bar-actions">
+    <button class="btn-print" onclick="window.print()">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <polyline points="6 9 6 2 18 2 18 9"/>
+        <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+        <rect x="6" y="14" width="12" height="8"/>
+      </svg>
+      Print
+    </button>
+    <a href="{% url 'expenses:list' %}" class="btn-back">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M19 12H5M12 5l-7 7 7 7"/>
+      </svg>
+      Back
+    </a>
+  </div>
+</div>
+
+<div class="page-wrap">
+  <div class="receipt-card">
+
+    <div class="school-header">
+      <div class="school-name">TSM PUBLIC SCHOOL</div>
+      <div class="school-subtitle">THATHOOR — School Management System</div>
+      <div class="school-reg">Recognised By MHRD &nbsp;|&nbsp; Reg: No. MB09188</div>
+      <div class="school-address">123 School Road, Thathoor &mdash; Phone: +91-XXXXXXXXXX</div>
+    </div>
+
+    <div class="receipt-meta">
+      <div>
+        <div class="receipt-big-title">Expense Voucher</div>
+        <div class="receipt-official">Official Expense Receipt</div>
+      </div>
+      <div class="receipt-number-block">
+        <div class="receipt-number">EXP{{ expense.pk|stringformat:"05d" }}</div>
+        <div class="receipt-date">{{ expense.expense_date|date:"F j, Y" }}</div>
+      </div>
+    </div>
+
+    <div class="info-grid">
+      <div class="info-cell">
+        <div class="info-key">Expense Title</div>
+        <div class="info-val">{{ expense.title }}</div>
+      </div>
+      <div class="info-cell">
+        <div class="info-key">Category</div>
+        <div class="info-val"><span class="badge-cat">{{ expense.get_category_display }}</span></div>
+      </div>
+      <div class="info-cell">
+        <div class="info-key">Expense Date</div>
+        <div class="info-val">{{ expense.expense_date|date:"F j, Y" }}</div>
+      </div>
+      <div class="info-cell">
+        <div class="info-key">Recorded By</div>
+        <div class="info-val">{{ expense.created_by.get_full_name|default:expense.created_by.username|default:"&mdash;" }}</div>
+      </div>
+    </div>
+
+    <div class="amount-box">
+      <div class="lbl">Amount</div>
+      <div class="val">&#8377;{{ expense.amount|floatformat:2 }}</div>
+    </div>
+
+    <div class="desc-box">
+      <div class="info-key">Description</div>
+      <div class="desc-text">{{ expense.description|default:"No description provided." }}</div>
+    </div>
+
+    <div class="sig-section">
+      <div class="sig-box">
+        <div class="sig-line"></div>
+        <div class="sig-label">Prepared By</div>
+      </div>
+      <div class="sig-box">
+        <div class="sig-line"></div>
+        <div class="sig-label">Approved By</div>
+      </div>
+    </div>
+
+    <div class="watermark">
+      This is a computer-generated receipt &mdash; TSM PUBLIC SCHOOL THATHOOR &mdash; Reg: No. MB09188
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>

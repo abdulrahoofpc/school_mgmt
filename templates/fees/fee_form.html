@@ -19,7 +19,7 @@
           <select name="student" class="form-control" required>
             <option value="">-- Select Student --</option>
             {% for s in students %}
-            <option value="{{ s.pk }}">{{ s.full_name }} — Class {{ s.student_class }}-{{ s.section }} (Roll: {{ s.roll_number }})</option>
+            <option value="{{ s.pk }}" {% if selected_student == s.pk|stringformat:'s' %}selected{% endif %}>{{ s.full_name }} — Class {{ s.student_class }}-{{ s.section }} (Roll: {{ s.roll_number }})</option>
             {% endfor %}
           </select>
         </div>

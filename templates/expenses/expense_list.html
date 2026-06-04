@@ -11,7 +11,21 @@
       Total: <span class="text-red text-mono">₹{{ total_amount|floatformat:0 }}</span>
     </div>
   </div>
-  <a href="{% url 'expenses:create' %}" class="btn btn-primary"><i class="fas fa-plus"></i> Add Expense</a>
+  <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+    <form method="get" action="{% url 'expenses:monthly_print' %}" style="display:flex; gap:6px; align-items:center;">
+      <select name="month" class="form-control" style="width:auto; min-width:150px;">
+        {% for val, label in month_choices %}
+        <option value="{{ val }}">{{ label }}</option>
+        {% empty %}
+        <option value="">No months</option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="btn btn-ghost" {% if not month_choices %}disabled{% endif %}>
+        <i class="fas fa-print"></i> Monthly Print
+      </button>
+    </form>
+    <a href="{% url 'expenses:create' %}" class="btn btn-primary"><i class="fas fa-plus"></i> Add Expense</a>
+  </div>
 </div>
 
 <div class="card">
@@ -55,6 +69,7 @@
           <td class="text-muted" style="font-size:12px;">{{ e.created_by.get_full_name|default:e.created_by.username|default:"—" }}</td>
           <td>
             <div style="display:flex; gap:6px;">
+              <a href="{% url 'expenses:receipt' e.pk %}" class="btn btn-ghost btn-sm" title="Print receipt"><i class="fas fa-receipt"></i></a>
               <a href="{% url 'expenses:edit' e.pk %}" class="btn btn-ghost btn-sm"><i class="fas fa-pen"></i></a>
               <a href="{% url 'expenses:delete' e.pk %}" class="btn btn-ghost btn-sm" style="color:var(--danger);"><i class="fas fa-trash"></i></a>
             </div>

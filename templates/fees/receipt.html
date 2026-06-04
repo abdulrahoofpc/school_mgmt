@@ -424,8 +424,8 @@
         <div class="receipt-official">Official Fee Receipt</div>
       </div>
       <div class="receipt-number-block">
-        <div class="receipt-number">RCP202600002</div>
-        <div class="receipt-date">July 10, 2026</div>
+        <div class="receipt-number">{{ payment.receipt_number }}</div>
+        <div class="receipt-date">{{ payment.payment_date|date:"F j, Y" }}</div>
       </div>
     </div>
 
@@ -433,23 +433,27 @@
     <div class="student-info">
       <div class="info-cell">
         <div class="info-key">Student Name</div>
-        <div class="info-val">Deepa Menon</div>
+        <div class="info-val">{{ payment.student.full_name }}</div>
       </div>
       <div class="info-cell">
         <div class="info-key">Roll Number</div>
-        <div class="info-val">5A006</div>
+        <div class="info-val">{{ payment.student.roll_number }}</div>
       </div>
       <div class="info-cell">
         <div class="info-key">Class / Section</div>
-        <div class="info-val">Class 5 &ndash; A</div>
+        <div class="info-val">{{ payment.student.get_student_class_display }} &ndash; {{ payment.student.section }}</div>
       </div>
       <div class="info-cell">
         <div class="info-key">Academic Year</div>
-        <div class="info-val">2026-27</div>
+        <div class="info-val">{{ payment.fee_structure.academic_year }}</div>
       </div>
-      <div class="info-cell full-width">
+      <div class="info-cell">
         <div class="info-key">Parent Name</div>
-        <div class="info-val">Rajesh Menon</div>
+        <div class="info-val">{{ payment.student.parent_name }}</div>
+      </div>
+      <div class="info-cell">
+        <div class="info-key">Fee Month(s)</div>
+        <div class="info-val">{{ payment.fee_months_display|default:"&mdash;" }}</div>
       </div>
     </div>
 
@@ -464,16 +468,20 @@
         </thead>
         <tbody>
           <tr>
-            <td>Total Fee (AY 2026-27)</td>
-            <td>&#8377;36000.00</td>
+            <td>Total Fee (AY {{ payment.fee_structure.academic_year }})</td>
+            <td>&#8377;{{ payment.fee_structure.total_fee|floatformat:2 }}</td>
           </tr>
           <tr class="row-deduct">
-            <td>Previous Payments</td>
-            <td>&#8377;36000.00</td>
+            <td>Paid Before This Receipt</td>
+            <td>&#8377;{{ payment.previous_paid|floatformat:2 }}</td>
           </tr>
           <tr class="row-total">
-            <td><strong>Amount Paid This Receipt</strong></td>
-            <td class="amount-paid">&#8377;36000.00</td>
+            <td><strong>Amount Paid This Receipt{% if payment.fee_months_display %} ({{ payment.fee_months_display }}){% endif %}</strong></td>
+            <td class="amount-paid">&#8377;{{ payment.amount_paid|floatformat:2 }}</td>
+          </tr>
+          <tr class="row-deduct">
+            <td>Balance Remaining</td>
+            <td>&#8377;{{ payment.balance_after|floatformat:2 }}</td>
           </tr>
         </tbody>
       </table>
@@ -483,15 +491,17 @@
     <div class="payment-footer">
       <div class="payment-mode-block">
         <div class="pf-label">Payment Mode</div>
-        <div class="pf-value">Cash</div>
+        <div class="pf-value">{{ payment.get_payment_mode_display }}</div>
       </div>
       <div class="payment-mode-block">
-        <div class="pf-label">Transaction Ref</div>
-        <div class="pf-value">&mdash;</div>
+        <div class="pf-label">Remarks</div>
+        <div class="pf-value">{{ payment.remarks|default:"&mdash;" }}</div>
       </div>
       <div>
         <div class="pf-label">Status</div>
-        <div class="status-badge status-paid">&#10003; PAID</div>
+        <div class="status-badge status-{{ payment.status }}">
+          {% if payment.status == 'paid' %}&#10003; PAID{% elif payment.status == 'partial' %}PARTIAL{% else %}PENDING{% endif %}
+        </div>
       </div>
     </div>
 

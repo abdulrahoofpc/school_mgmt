@@ -3,6 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db.models import Q, Sum
+from django.db import IntegrityError
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
 from .models import FeeStructure, Payment
@@ -32,6 +33,23 @@ def get_current_year():
     return f"{today.year}-{str(today.year + 1)[2:]}"
 
 
+def _month_choices():
+    """Return [(value 'YYYY-MM', label 'Month YYYY'), ...] spanning the academic
+    span around today so the user can pick the month(s) a payment is for."""
+    today = datetime.date.today()
+    choices = []
+    # 6 months back through 12 months ahead.
+    start_year, start_month = today.year, today.month
+    for offset in range(-6, 13):
+        m = start_month - 1 + offset
+        y = start_year + m // 12
+        mm = m % 12 + 1
+        value = f"{y}-{mm:02d}"
+        label = datetime.date(y, mm, 1).strftime('%B %Y')
+        choices.append((value, label))
+    return choices
+
+
 @login_required
 def fee_list(request):
     queryset = FeeStructure.objects.select_related('student').all()
@@ -55,23 +73,46 @@ def fee_list(request):
 
 @login_required
 def fee_create(request):
+    posted = None
+    selected_student = ''
     if request.method == 'POST':
+        selected_student = request.POST.get('student', '')
+        academic_year = request.POST.get('academic_year', '').strip()
+        # Keep the user's entered values so the form can be re-displayed on error.
+        posted = {
+            'academic_year': academic_year,
+            'admission_fee': request.POST.get('admission_fee') or 0,
+            'term1_fee': request.POST.get('term1_fee') or 0,
+            'term2_fee': request.POST.get('term2_fee') or 0,
+            'term3_fee': request.POST.get('term3_fee') or 0,
+            'snacks_fee': request.POST.get('snacks_fee') or 0,
+            'book_fee': request.POST.get('book_fee') or 0,
+            'uniform_fee': request.POST.get('uniform_fee') or 0,
+        }
         try:
-            student = get_object_or_404(Student, pk=request.POST['student'])
-            fee = FeeStructure(
-                student=student,
-                academic_year=request.POST['academic_year'],
-                admission_fee=request.POST.get('admission_fee') or 0,
-                term1_fee=request.POST.get('term1_fee') or 0,
-                term2_fee=request.POST.get('term2_fee') or 0,
-                term3_fee=request.POST.get('term3_fee') or 0,
-                snacks_fee=request.POST.get('snacks_fee') or 0,
-                book_fee=request.POST.get('book_fee') or 0,
-                uniform_fee=request.POST.get('uniform_fee') or 0,
-            )
+            student = get_object_or_404(Student, pk=selected_student)
+            # Friendly duplicate check (model has unique_together student+year).
+            existing = FeeStructure.objects.filter(
+                student=student, academic_year=academic_year
+            ).first()
+            if existing:
+                messages.error(
+                    request,
+                    f'A fee structure for {student.full_name} in {academic_year} '
+                    f'already exists. Edit the existing one instead.'
+                )
+                return redirect('fees:detail', pk=existing.pk)
+
+            fee = FeeStructure(student=student, **posted)
             fee.save()
             messages.success(request, 'Fee structure created.')
             return redirect('fees:detail', pk=fee.pk)
+        except IntegrityError:
+            # Safety net for a race condition between the check and the insert.
+            messages.error(
+                request,
+                'A fee structure for this student and academic year already exists.'
+            )
         except Exception as e:
             messages.error(request, f'Error: {e}')
     students = Student.objects.filter(is_active=True)
@@ -79,6 +120,8 @@ def fee_create(request):
         'action': 'Create',
         'students': students,
         'current_year': get_current_year(),
+        'fee': posted,
+        'selected_student': selected_student,
     })
 
 
@@ -97,7 +140,21 @@ def fee_edit(request, pk):
     fee = get_object_or_404(FeeStructure, pk=pk)
     if request.method == 'POST':
         try:
-            fee.academic_year = request.POST['academic_year']
+            new_year = request.POST.get('academic_year', '').strip()
+            # Friendly duplicate check, excluding this record itself.
+            clash = FeeStructure.objects.filter(
+                student=fee.student, academic_year=new_year
+            ).exclude(pk=fee.pk).exists()
+            if clash:
+                messages.error(
+                    request,
+                    f'{fee.student.full_name} already has a fee structure for '
+                    f'{new_year}. Choose a different academic year.'
+                )
+                return render(request, 'fees/fee_form.html', {
+                    'action': 'Edit', 'fee': fee, 'current_year': get_current_year(),
+                })
+            fee.academic_year = new_year
             fee.admission_fee = request.POST.get('admission_fee') or 0
             fee.term1_fee = request.POST.get('term1_fee') or 0
             fee.term2_fee = request.POST.get('term2_fee') or 0
@@ -108,6 +165,11 @@ def fee_edit(request, pk):
             fee.save()
             messages.success(request, 'Fee structure updated.')
             return redirect('fees:detail', pk=fee.pk)
+        except IntegrityError:
+            messages.error(
+                request,
+                'A fee structure for this student and academic year already exists.'
+            )
         except Exception as e:
             messages.error(request, f'Error: {e}')
     return render(request, 'fees/fee_form.html', {
@@ -132,11 +194,15 @@ def payment_create(request, fee_pk):
     fee = get_object_or_404(FeeStructure, pk=fee_pk)
     if request.method == 'POST':
         try:
+            # fee_month may be a multi-select; store as comma-separated YYYY-MM.
+            fee_months = request.POST.getlist('fee_month')
+            fee_month_value = ','.join([m for m in fee_months if m])
             payment = Payment(
                 fee_structure=fee,
                 student=fee.student,
                 amount_paid=request.POST['amount_paid'],
                 payment_date=request.POST['payment_date'],
+                fee_month=fee_month_value,
                 payment_mode=request.POST.get('payment_mode', 'cash'),
                 status=request.POST.get('status', 'paid'),
                 remarks=request.POST.get('remarks', ''),
@@ -150,12 +216,15 @@ def payment_create(request, fee_pk):
         'fee': fee,
         'today': datetime.date.today(),
         'payment_modes': Payment.PAYMENT_MODE_CHOICES,
+        'month_choices': _month_choices(),
     })
 
 
 @login_required
 def payment_receipt(request, pk):
-    payment = get_object_or_404(Payment, pk=pk)
+    payment = get_object_or_404(
+        Payment.objects.select_related('student', 'fee_structure'), pk=pk
+    )
     return render(request, 'fees/receipt.html', {'payment': payment})
 
 
