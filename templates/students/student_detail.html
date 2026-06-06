@@ -10,7 +10,12 @@
       Roll No: {{ student.roll_number }} &nbsp;|&nbsp; {{ student.get_student_class_display }} – {{ student.section }}
     </div>
   </div>
-  <div style="display:flex; gap:8px;">
+  <div style="display:flex; gap:8px; flex-wrap:wrap;">
+    {% if student.is_active %}
+    <a href="{% url 'students:promote' student.pk %}" class="btn btn-primary">
+      <i class="fas fa-level-up-alt"></i> Promote / Transfer
+    </a>
+    {% endif %}
     <a href="{% url 'students:edit' student.pk %}" class="btn btn-ghost"><i class="fas fa-pen"></i> Edit</a>
     <a href="{% url 'students:list' %}" class="btn btn-ghost"><i class="fas fa-arrow-left"></i> Back</a>
   </div>
@@ -147,3 +152,40 @@
   </div>
 </div>
 {% endblock %}
+<!-- Academic History -->
+{% if academic_records %}
+<div class="card" style="margin-top:16px;">
+  <div class="card-header"><span class="card-title">Academic History</span></div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Academic Year</th><th>From</th><th>To</th>
+          <th>Roll</th><th>Status</th><th>Remarks</th><th>Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in academic_records %}
+        <tr>
+          <td class="text-mono">{{ r.academic_year }}</td>
+          <td>{{ r.from_class_display }}-{{ r.from_section }}</td>
+          <td>{% if r.to_class %}{{ r.to_class_display }}-{{ r.to_section }}{% else %}—{% endif %}</td>
+          <td class="text-mono">{{ r.from_roll_number }}</td>
+          <td>
+            <span class="badge
+              {% if r.status == "promoted" %}badge-green
+              {% elif r.status == "graduated" %}badge-blue
+              {% elif r.status == "failed" %}badge-red
+              {% else %}badge-gray{% endif %}">
+              {{ r.get_status_display }}
+            </span>
+          </td>
+          <td class="text-muted">{{ r.remarks|default:"—" }}</td>
+          <td class="text-muted">{{ r.created_at|date:"M j, Y" }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}

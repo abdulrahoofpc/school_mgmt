@@ -8,7 +8,17 @@
     <h1>Students</h1>
     <div class="text-muted" style="font-size:12px; margin-top:4px;">{{ total }} student{{ total|pluralize }} found</div>
   </div>
-  <a href="{% url 'students:create' %}" class="btn btn-primary"><i class="fas fa-plus"></i> Add Student</a>
+  <div style="display:flex; gap:8px; flex-wrap:wrap;">
+    <a href="{% url 'students:promote_class' %}" class="btn btn-ghost">
+      <i class="fas fa-level-up-alt"></i> Promote Class
+    </a>
+    <a href="{% url 'students:promotion_history' %}" class="btn btn-ghost">
+      <i class="fas fa-history"></i> Promotion History
+    </a>
+    <a href="{% url 'students:create' %}" class="btn btn-primary">
+      <i class="fas fa-plus"></i> Add Student
+    </a>
+  </div>
 </div>
 
 <!-- Search / Filter Bar -->

@@ -1,0 +1,154 @@
+{% extends 'base.html' %}
+{% block title %}Promote {{ student.full_name }}{% endblock %}
+{% block page_title %}Student Promotion{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1>Promote / Transfer Student</h1>
+    <div class="text-muted" style="font-size:12px; margin-top:4px;">
+      Process year-end outcome for {{ student.full_name }}
+    </div>
+  </div>
+  <div style="display:flex; gap:8px;">
+    <a href="{% url 'students:detail' student.pk %}" class="btn btn-ghost">
+      <i class="fas fa-arrow-left"></i> Back
+    </a>
+  </div>
+</div>
+
+<!-- Student Info Card -->
+<div class="card" style="margin-bottom:16px; padding:16px;">
+  <div style="display:flex; align-items:center; gap:16px;">
+    {% if student.photo %}
+      <img src="{{ student.photo.url }}" alt="{{ student.full_name }}"
+           style="width:60px; height:60px; border-radius:50%; object-fit:cover; border:2px solid var(--border);" />
+    {% else %}
+      <div style="width:60px; height:60px; border-radius:50%; background:var(--accent2,#6366f1);
+                  color:#fff; display:flex; align-items:center; justify-content:center;
+                  font-size:20px; font-weight:700; flex-shrink:0;">
+        {{ student.first_name|first|upper }}{{ student.last_name|first|upper }}
+      </div>
+    {% endif %}
+    <div>
+      <div style="font-size:17px; font-weight:700;">{{ student.full_name }}</div>
+      <div class="text-muted" style="font-size:13px;">
+        {{ student.get_student_class_display }} – Section {{ student.section }}
+        &nbsp;|&nbsp; Roll: <strong>{{ student.roll_number }}</strong>
+        &nbsp;|&nbsp; AY: <strong>{{ student.academic_year|default:"—" }}</strong>
+      </div>
+    </div>
+  </div>
+</div>
+
+<form method="post">
+  {% csrf_token %}
+
+  <!-- Outcome -->
+  <div class="card" style="margin-bottom:16px;">
+    <div class="card-header"><span class="card-title">Promotion Outcome</span></div>
+    <div class="form-grid">
+
+      <div class="form-group">
+        <label>Academic Year (From) *</label>
+        <input type="text" name="from_academic_year" class="form-control"
+               value="{{ current_year }}" required placeholder="e.g. 2025-26" />
+        <small class="text-muted">The year being completed / closed out.</small>
+      </div>
+
+      <div class="form-group">
+        <label>Academic Year (To)</label>
+        <input type="text" name="to_academic_year" class="form-control"
+               value="{{ next_year }}" placeholder="e.g. 2026-27" />
+        <small class="text-muted">The new year the student joins (if applicable).</small>
+      </div>
+
+      <div class="form-group" style="grid-column:1/-1;">
+        <label>Outcome / Status *</label>
+        <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:10px; margin-top:6px;">
+          {% for val, label in status_choices %}
+          <label style="display:flex; align-items:center; gap:8px; padding:12px 14px;
+                         border:1px solid var(--border); border-radius:10px; cursor:pointer;
+                         background:var(--card-bg); font-weight:500;"
+                 id="label_{{ val }}">
+            <input type="radio" name="status" value="{{ val }}" id="status_{{ val }}"
+                   onchange="handleStatusChange(this.value)" required />
+            {% if val == 'promoted' %}<i class="fas fa-level-up-alt" style="color:#2ea043;"></i>
+            {% elif val == 'failed' %}<i class="fas fa-times-circle" style="color:#f85149;"></i>
+            {% elif val == 'graduated' %}<i class="fas fa-graduation-cap" style="color:#58a6ff;"></i>
+            {% elif val == 'transferred' %}<i class="fas fa-exchange-alt" style="color:#d29922;"></i>
+            {% else %}<i class="fas fa-user-minus" style="color:#8b949e;"></i>{% endif %}
+            {{ label }}
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- New Placement (shown for promoted/failed) -->
+  <div class="card" id="placement_card" style="margin-bottom:16px; display:none;">
+    <div class="card-header"><span class="card-title">New Placement</span></div>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>New Class *</label>
+        <select name="to_class" class="form-control" id="to_class_sel">
+          <option value="">-- Select Class --</option>
+          {% for val, label in class_choices %}
+            <option value="{{ val }}"
+              {% if val == next_class %}selected{% endif %}>
+              {{ label }}
+              {% if val == next_class %} ← Next Class{% endif %}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>New Section *</label>
+        <select name="to_section" class="form-control">
+          {% for val, label in section_choices %}
+            <option value="{{ val }}"
+              {% if val == student.section %}selected{% endif %}>{{ val }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label>New Roll Number</label>
+        <input type="text" name="to_roll_number" class="form-control"
+               value="{{ student.roll_number }}" />
+        <small class="text-muted">Must be unique in the new class &amp; section.</small>
+      </div>
+    </div>
+  </div>
+
+  <!-- Remarks -->
+  <div class="card" style="margin-bottom:16px;">
+    <div class="card-header"><span class="card-title">Remarks</span></div>
+    <div class="form-group" style="padding:16px;">
+      <textarea name="remarks" class="form-control" rows="3"
+                placeholder="Optional notes (e.g. reason for failure, destination school for transfer…)"></textarea>
+    </div>
+  </div>
+
+  <div style="display:flex; gap:10px;">
+    <button type="submit" class="btn btn-primary">
+      <i class="fas fa-check"></i> Confirm &amp; Process
+    </button>
+    <a href="{% url 'students:detail' student.pk %}" class="btn btn-ghost">Cancel</a>
+  </div>
+</form>
+
+<script>
+function handleStatusChange(val) {
+  const card = document.getElementById('placement_card');
+  card.style.display = (val === 'promoted' || val === 'failed') ? '' : 'none';
+  // For 'failed', keep same class pre-selected.
+  if (val === 'failed') {
+    const sel = document.getElementById('to_class_sel');
+    for (let opt of sel.options) {
+      if (opt.value === '{{ student.student_class }}') { opt.selected = true; break; }
+    }
+  }
+}
+</script>
+{% endblock %}

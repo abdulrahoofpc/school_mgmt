@@ -64,19 +64,11 @@
     <div class="card-header"><span class="card-title">Academic Details</span></div>
     <div class="form-grid">
       <div class="form-group">
-        <label>Roll Number *</label>
-        <input type="text" name="roll_number" class="form-control"
-               value="{{ student.roll_number|default:'' }}" required />
-      </div>
-      <div class="form-group">
         <label>Class *</label>
         <select name="student_class" class="form-control" required>
           <option value="">-- Select Class --</option>
           {% for val, label in class_choices %}
-            <option value="{{ val }}"
-              {% if student.student_class == val %}selected{% endif %}>
-              {{ label }}
-            </option>
+            <option value="{{ val }}" {% if student.student_class == val %}selected{% endif %}>{{ label }}</option>
           {% endfor %}
         </select>
       </div>
@@ -85,12 +77,26 @@
         <select name="section" class="form-control" required>
           <option value="">-- Select --</option>
           {% for val, label in section_choices %}
-            <option value="{{ val }}"
-              {% if student.section == val %}selected{% endif %}>
-              {{ val }}
-            </option>
+            <option value="{{ val }}" {% if student.section == val %}selected{% endif %}>{{ val }}</option>
           {% endfor %}
         </select>
+      </div>
+      <div class="form-group">
+        <label>Roll Number *
+          <span class="text-muted" style="font-weight:400; font-size:11px;">
+            (unique within class &amp; section)
+          </span>
+        </label>
+        <input type="text" name="roll_number" class="form-control"
+               value="{{ student.roll_number|default:'' }}" required />
+      </div>
+      <div class="form-group">
+        <label>Academic Year
+          <span class="text-muted" style="font-weight:400; font-size:11px;">e.g. 2025-26</span>
+        </label>
+        <input type="text" name="academic_year" class="form-control"
+               value="{{ student.academic_year|default:current_year }}"
+               placeholder="{{ current_year }}" />
       </div>
       <div class="form-group">
         <label>Admission Date *</label>
